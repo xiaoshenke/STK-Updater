@@ -29,15 +29,14 @@ public class CocoExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     static {
         try {
-            sdcarRootPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
-                    + App.getContext().getPackageName() + "/log/";
-
+            //sdcarRootPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + App.getContext().getPackageName() + "/log/";
 
             sdcarRootPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
                     + File.separator
                     + App.getContext().getPackageName()
-                    + "/log"
-            ;
+                    + "/log";
+
+            //saveFile(sdcarRootPath + File.separator + "tmp.txt", "hello");
 
         } catch (Exception e) {
 
