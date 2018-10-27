@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="wuxian.me.stkapp.MainActivity">
+
+    <RelativeLayout
+        android:id="@+id/up"
+        android:layout_width="match_parent"
+        android:layout_height="300dp">
+
+        <TextView
+            android:text="当前在下载第1页数据"
+            android:gravity="center"
+            android:textColor="@color/black"
+            android:id="@+id/progress"
+            android:layout_marginTop="100dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <RelativeLayout
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_alignParentBottom="true">
+            <TextView
+                android:id="@+id/download"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="下载今日数据"
+                android:textColor="@color/black"/>
+        </RelativeLayout>
+    </RelativeLayout>
+
+    <ListView
+        android:layout_marginTop="20dp"
+        android:id="@+id/listview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/up">
+
+    </ListView>
+
+</RelativeLayout>

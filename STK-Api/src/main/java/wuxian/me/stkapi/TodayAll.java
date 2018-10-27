@@ -1,5 +1,9 @@
 package wuxian.me.stkapi;
 
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
+import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.params.HttpParams;
 import com.alibaba.fastjson.JSON;
 import com.sun.corba.se.impl.naming.cosnaming.NamingUtils;
 import org.apache.http.HttpResponse;
@@ -89,8 +93,8 @@ public class TodayAll implements Runnable {
 
 
         mList = new ArrayList<Item>();
-        for (int i=0;i<full.size();i++) {
-            if (full.get(i).volume > 0){
+        for (int i = 0; i < full.size(); i++) {
+            if (full.get(i).volume > 0) {
                 mList.add(full.get(i));
             }
         }
@@ -101,7 +105,11 @@ public class TodayAll implements Runnable {
         HttpClient client = new DefaultHttpClient();
 
         ((DefaultHttpClient) client).setHttpRequestRetryHandler(
-                new DefaultHttpRequestRetryHandler(3, false));
+                new DefaultHttpRequestRetryHandler(2, false));
+
+        HttpParams httpParams = client.getParams();
+        httpParams.setParameter(
+                CoreConnectionPNames.CONNECTION_TIMEOUT, 5 * 1000);
 
         String url = String.format("http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData?num=80&sort=code&asc=0&node=%s&symbol=&_s_r_a=page&page=%s"
                 , "hs_a", page);
@@ -120,7 +128,7 @@ public class TodayAll implements Runnable {
         }
 
         BufferedReader rd = new BufferedReader(
-                new InputStreamReader(response.getEntity().getContent(),"GBK"));
+                new InputStreamReader(response.getEntity().getContent(), "GBK"));
 
         StringBuffer result = new StringBuffer();
         String line = "";
@@ -132,9 +140,18 @@ public class TodayAll implements Runnable {
             return new ArrayList<Item>(0);
         }
 
-        List<Item> itemList = JSON.parseArray(result.toString(), Item.class);
+        JsonParser parser = new JsonParser();
+        JsonArray jsonArray = parser.parse(result.toString()).getAsJsonArray();
+        Gson gson = new Gson();
+        List<Item> items = new ArrayList<Item>();
+        for (JsonElement element:jsonArray) {
+            Item item = gson.fromJson(element,Item.class);
+            items.add(item);
+        }
 
-        return itemList;
+        return items;
+        //return new Gson().fromJson(result.toString(), new TypeToken<List<Item>>() {}.getType());
+        //return JSON.parseArray(result.toString(), Item.class);
     }
 
     public void run() {
@@ -148,6 +165,12 @@ public class TodayAll implements Runnable {
             if (mListener != null) {
                 mListener.onRequestSuccess(mList);
             }
+        } catch (JsonIOException e) {
+            e.printStackTrace();
+            System.out.println(e);
+        } catch (JsonSyntaxException e) {
+            e.printStackTrace();
+            System.out.println(e);
         } catch (Exception e) {
 
             System.out.println(e);
@@ -158,6 +181,10 @@ public class TodayAll implements Runnable {
         } finally {
             started = false;
             mThread = null;
+
+            if (mListener != null) {
+                mListener.onRequestFinish();
+            }
         }
 
     }
@@ -216,7 +243,7 @@ public class TodayAll implements Runnable {
         final String path = "/Users/wuxian/Desktop/today.csv";
         TodayAll t = new TodayAll();
         t.setStart(1);
-        t.setEnd(3);
+        t.setEnd(1);
         t.setListener(new ITodayAllListener() {
             public void onPerformReqStart(String type, Integer page) {
                 System.out.println("onPerformReqStart type: " + type + " page: " + page);
@@ -233,11 +260,15 @@ public class TodayAll implements Runnable {
 
             public void onRequestSuccess(List<Item> list) {
                 System.out.println("onSuccess,size: " + list.size() + " \nlist: " + list);
-                CSVUtil.writeTodayAllItems(path,list);
+                //CSVUtil.writeTodayAllItems(path,list);
             }
 
             public void onRequestFail(String msg) {
                 System.out.println("onFail,msg: " + msg);
+            }
+
+            public void onRequestFinish() {
+
             }
         });
         t.getTodayAll();

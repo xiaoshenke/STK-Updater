@@ -16,4 +16,6 @@ public interface ITodayAllListener {
     void onRequestSuccess(List<TodayAll.Item> list);
 
     void onRequestFail(String message);
+
+    void onRequestFinish();
 }
