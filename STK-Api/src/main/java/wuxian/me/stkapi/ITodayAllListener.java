@@ -18,4 +18,6 @@ public interface ITodayAllListener {
     void onRequestFail(String message);
 
     void onRequestFinish();
+
+    void onRequestCanceld();
 }

@@ -1,5 +1,6 @@
 package wuxian.me.stkapp;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Environment;
 import android.support.v7.app.AlertDialog;
@@ -25,10 +26,14 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView mProgressText;
     private TextView mDownloadText;
+    private TextView mInDownloadText;
     private ListView mListView;
+    private Context mContext;
     private CSVAdapter mAdapter;
     private String mCsvName;
     private File mPath;
+    private TodayAll todayAll = new TodayAll();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +47,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mProgressText = (TextView) findViewById(R.id.progress);
+
+        mContext = mProgressText.getContext();
         mDownloadText = (TextView) findViewById(R.id.download);
+        mInDownloadText = (TextView) findViewById(R.id.in_download);
         mListView = (ListView) findViewById(R.id.listview);
 
         initView();
@@ -63,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initView() {
 
+        //TODO: set interval...????
         final List<String> csvs = listCSVFiles();
 
         mProgressText.setVisibility(View.INVISIBLE);
@@ -80,6 +89,9 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             doDownload();
+
+                            mDownloadText.setVisibility(View.GONE);
+                            mInDownloadText.setVisibility(View.VISIBLE);
                         }
                     });
                     builder.setNegativeButton("取消", null);
@@ -91,16 +103,38 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mAdapter.notifyDataSetChanged();
+        mInDownloadText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(todayAll.isStarted()) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                    builder.setTitle("正在下载中,要取消当前的下载?");
+                    builder.setPositiveButton("是", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            todayAll.setCanceled(true);
 
+                            mInDownloadText.setVisibility(View.INVISIBLE);
+                            mDownloadText.setVisibility(View.VISIBLE);
+                        }
+                    });
+                    builder.setNegativeButton("取消", null);
+                    builder.create().show();
+                    return;
+                }
+            }
+        });
+
+        mAdapter.notifyDataSetChanged();
+    }
+
+    private Context getContext() {
+        return mContext;
     }
 
     private void doDownload() {
-        TodayAll t = new TodayAll();
-        //t.setStart(1);
-        //t.setEnd(1);
 
-        t.setListener(new ITodayAllListener() {
+        todayAll.setListener(new ITodayAllListener() {
             @Override
             public void onPerformReqStart(final String s, final Integer integer) {
                 runOnUiThread(new Runnable() {
@@ -157,7 +191,8 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mProgressText.setVisibility(View.INVISIBLE);
+                        mProgressText.setText("下载失败！");
+                        //mProgressText.setVisibility(View.INVISIBLE);
                     }
                 });
             }
@@ -168,11 +203,24 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         //mProgressText.setVisibility(View.VISIBLE);
-                        //mProgressText.setText("下载结束！");
+                        mProgressText.setText("下载结束！");
+
+                        mDownloadText.setVisibility(View.VISIBLE);
+                        mInDownloadText.setVisibility(View.INVISIBLE);
+                    }
+                });
+            }
+
+            @Override
+            public void onRequestCanceld() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getContext(),"请求已取消！",Toast.LENGTH_SHORT).show();;
                     }
                 });
             }
         });
-        t.getTodayAll();
+        todayAll.getTodayAll();
     }
 }

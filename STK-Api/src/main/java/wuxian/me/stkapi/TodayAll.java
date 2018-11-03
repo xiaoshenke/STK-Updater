@@ -31,7 +31,24 @@ public class TodayAll implements Runnable {
     private List<Item> mList = null;
     private int mStart = 1;
     private int mEnd = 60;
+    private boolean canceled = false;
+    private long currentThreadHash = 0;
+
     private ITodayAllListener mListener = null;
+
+    private long interval = 0;
+
+    public void setCanceled(boolean canceled) {
+        this.canceled = canceled;
+    }
+
+    public void setInterval(long interval) {
+        this.interval = interval;
+    }
+
+    public boolean isStarted() {
+        return started;
+    }
 
     public void setListener(ITodayAllListener listener) {
         mListener = listener;
@@ -52,6 +69,8 @@ public class TodayAll implements Runnable {
         }
         if (mThread == null) {
             mThread = new Thread(this);
+            currentThreadHash = mThread.hashCode();
+
             mThread.start();
             started = true;
         }
@@ -60,9 +79,11 @@ public class TodayAll implements Runnable {
     private void realRun() throws Exception {
 
         String type = "hs_a";
-
         List<Item> full = new ArrayList<Item>();
         for (int i = mStart; i < mEnd; i++) {
+            if(canceled) {
+                return;
+            }
 
             if (mListener != null) {
                 mListener.onPerformReqStart(type, i);
@@ -71,6 +92,14 @@ public class TodayAll implements Runnable {
 
             if (mListener != null) {
                 mListener.onPerformReqEnd(type, i);
+            }
+
+            if (interval > 0) {
+                try {
+                    Thread.currentThread().sleep(interval);
+                } catch (Exception e) {
+                    ;
+                }
             }
 
             if (tmp.size() == 0) {
@@ -83,6 +112,9 @@ public class TodayAll implements Runnable {
         if (mListener != null) {
             mListener.onPerformReqStart(type, 1);
         }
+        if(canceled) {
+            return;
+        }
         List<Item> tmp = performReq(type, 1);
         if (mListener != null) {
             mListener.onPerformReqEnd(type, 1);
@@ -91,7 +123,9 @@ public class TodayAll implements Runnable {
             full.addAll(tmp);
         }
 
-
+        if(canceled) {
+            return;
+        }
         mList = new ArrayList<Item>();
         for (int i = 0; i < full.size(); i++) {
             if (full.get(i).volume > 0) {
@@ -150,8 +184,6 @@ public class TodayAll implements Runnable {
         }
 
         return items;
-        //return new Gson().fromJson(result.toString(), new TypeToken<List<Item>>() {}.getType());
-        //return JSON.parseArray(result.toString(), Item.class);
     }
 
     public void run() {
@@ -162,15 +194,12 @@ public class TodayAll implements Runnable {
             }
             realRun();
 
-            if (mListener != null) {
-                mListener.onRequestSuccess(mList);
+            if(mThread != null && mThread.hashCode() == currentThreadHash && !canceled) {
+                if (mListener != null) {
+                    mListener.onRequestSuccess(mList);
+                }
             }
-        } catch (JsonIOException e) {
-            e.printStackTrace();
-            System.out.println(e);
-        } catch (JsonSyntaxException e) {
-            e.printStackTrace();
-            System.out.println(e);
+
         } catch (Exception e) {
 
             System.out.println(e);
@@ -179,8 +208,14 @@ public class TodayAll implements Runnable {
                 mListener.onRequestFail(e.getMessage());
             }
         } finally {
+            if (canceled == true && started) {
+                if (mListener != null) {
+                    mListener.onRequestCanceld();
+                }
+            }
             started = false;
             mThread = null;
+            canceled = false;
 
             if (mListener != null) {
                 mListener.onRequestFinish();
@@ -241,7 +276,7 @@ public class TodayAll implements Runnable {
 
     public static void main(String[] args) throws Exception {
         final String path = "/Users/wuxian/Desktop/today.csv";
-        TodayAll t = new TodayAll();
+        final TodayAll t = new TodayAll();
         t.setStart(1);
         t.setEnd(1);
         t.setListener(new ITodayAllListener() {
@@ -256,6 +291,8 @@ public class TodayAll implements Runnable {
 
             public void onRequestStart() {
                 System.out.println("onStart");
+
+                t.setCanceled(true);
             }
 
             public void onRequestSuccess(List<Item> list) {
@@ -268,6 +305,11 @@ public class TodayAll implements Runnable {
             }
 
             public void onRequestFinish() {
+
+            }
+
+            public void onRequestCanceld() {
+                System.out.println("onRequestCanceled!");
 
             }
         });
