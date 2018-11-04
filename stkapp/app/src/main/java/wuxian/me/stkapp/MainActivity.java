@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import wuxian.me.stkapi.CSVUtil;
 import wuxian.me.stkapi.ITodayAllListener;
@@ -39,7 +40,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        String name = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        TimeZone timeZone = TimeZone.getTimeZone("GMT+8:00");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        dateFormat.setTimeZone(timeZone);
+        String name = dateFormat.format(new Date());
         final String csvName = name + ".csv";
         mCsvName = csvName;
         mPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -100,6 +104,9 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 doDownload();
+                mDownloadText.setVisibility(View.GONE);
+                mInDownloadText.setVisibility(View.VISIBLE);
+
             }
         });
 
